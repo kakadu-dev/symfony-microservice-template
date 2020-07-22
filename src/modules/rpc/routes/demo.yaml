@@ -1,0 +1,5 @@
+demo_hello:
+  path:       /demo/hello
+  controller: App\modules\rpc\controllers\DemoController::hello
+  methods:    POST
+

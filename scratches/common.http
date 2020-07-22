@@ -1,0 +1,13 @@
+# Example request
+POST {{host}}/panel:base
+Content-Type: application/json
+
+{
+    "id": 1,
+    "method": "rpc.demo.hello",
+    "params": {
+        "test": 1
+    }
+}
+
+###

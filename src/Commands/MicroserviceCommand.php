@@ -2,27 +2,66 @@
 
 namespace App\Commands;
 
+use App\Kernel;
+use Exception;
 use Kakadu\Microservices\Microservice;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
-use Exception;
+use Symfony\Component\HttpFoundation\Request;
 
 class MicroserviceCommand extends Command
 {
-    const YII_ENV = 'example';
+    /**
+     * @var string
+     */
+    public string $appEnv;
+
+    /**
+     * @var bool
+     */
+    public bool $appDebug;
+
+    /**
+     * @var string
+     */
+    public string $projectAlias;
+
+    /**
+     * @var string
+     */
+    public string $serviceName;
+
+    /**
+     * @var string|null
+     */
+    public ?string $ijsonHost;
 
     /**
      * @var string
      */
     protected static $defaultName = 'microservice:start';
 
+    /**
+     * MicroserviceCommand constructor.
+     *
+     * @param array $params
+     */
+    public function __construct(array $params)
+    {
+        $this->appEnv = $_SERVER['APP_ENV'];
+        $this->appDebug = (bool) $_SERVER['APP_DEBUG'];
+        $this->projectAlias = $params['projectAlias'];
+        $this->serviceName = $params['serviceName'];
+        $this->ijsonHost = $params['ijsonHost'];
+
+        parent::__construct();
+    }
+
     protected function configure()
     {
-        // TODO get configure from microservice()
-
-        $this
-            ->setDescription('Create microservice');
+        $this->setDescription('Get running microservice');
     }
 
     /**
@@ -34,21 +73,30 @@ class MicroserviceCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        // TODO Get environment from config
-        $projectAlias = 'panel';
-        $serviceName = 'base';
-        $ijsonHost = null;
+        $this->createMicroservice($output);
 
-        // TODO logger
-        Microservice::create("$projectAlias:$serviceName", [
-            'ijson' => $ijsonHost,
-            'env'   => self::YII_ENV,
-        ]);
-
-        // TODO add controller
         Microservice::getInstance()->start(function ($method, $params) {
             $route = str_replace('.', '/', $method);
-//            return Yii::$app->runAction($route, $params);
+
+            $kernel  = new Kernel($this->appEnv, $this->appDebug);
+            $request = Request::create($route, 'POST', $params);
+
+            return $kernel->handle($request)->getContent();
         });
+    }
+
+    /**
+     * @param OutputInterface $output
+     *
+     * @throws Exception
+     */
+    public function createMicroservice(OutputInterface $output): void
+    {
+        $logger = new ConsoleLogger($output);
+
+        Microservice::create("{$this->projectAlias}:{$this->serviceName}", [
+            'ijson' => $this->ijsonHost,
+            'env'   => $this->appEnv,
+        ], $logger);
     }
 }
