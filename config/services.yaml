@@ -25,3 +25,23 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    App\Helpers\Project:
+        arguments:
+            {
+                $projectAlias: "panel",
+                $serviceName: "base",
+                $ijsonHost: null,
+            }
+
+    App\modules\rpc\event\Request:
+        tags:
+            - { name: kernel.event_listener, event: kernel.request}
+
+    App\modules\rpc\event\Controller:
+        tags:
+            - { name: kernel.event_listener, event: kernel.controller}
+
+    App\modules\rpc\event\View:
+        tags:
+            - { name: kernel.event_listener, event: kernel.view}

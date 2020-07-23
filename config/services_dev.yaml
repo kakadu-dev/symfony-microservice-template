@@ -2,23 +2,3 @@ services:
     _defaults:
         autowire: true
         autoconfigure: true
-
-    App\Commands\MicroserviceCommand:
-        arguments:
-            $params: {
-                "projectAlias": "panel",
-                "serviceName": "base",
-                "ijsonHost": null
-            }
-
-    App\modules\rpc\event\Request:
-        tags:
-            - { name: kernel.event_listener, event: kernel.request}
-
-    App\modules\rpc\event\Controller:
-        tags:
-            - { name: kernel.event_listener, event: kernel.controller}
-
-    App\modules\rpc\event\View:
-        tags:
-            - { name: kernel.event_listener, event: kernel.view}
