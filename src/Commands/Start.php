@@ -2,8 +2,7 @@
 
 namespace App\Commands;
 
-use App\Helpers\MicroserviceHelper;
-use App\Helpers\Project;
+use App\Helpers\{MicroserviceHelper, Project};
 use App\Kernel;
 use Exception;
 use Kakadu\Microservices\Microservice;
@@ -30,11 +29,6 @@ class Start extends Command
     public Project $project;
 
     /**
-     * @var string
-     */
-    protected static $defaultName = 'microservice:start';
-
-    /**
      * Start constructor.
      *
      * @param MicroserviceHelper $microservice
@@ -43,14 +37,19 @@ class Start extends Command
     public function __construct(MicroserviceHelper $microservice, Project $project)
     {
         $this->microservice = $microservice;
-        $this->project = $project;
+        $this->project      = $project;
 
         parent::__construct();
     }
 
+    /**
+     * @inheritDoc
+     */
     protected function configure()
     {
-        $this->setDescription('Get running microservice');
+        $this
+            ->setName('microservice:start')
+            ->setDescription('Get running microservice');
     }
 
     /**

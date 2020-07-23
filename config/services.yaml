@@ -31,6 +31,9 @@ services:
             {
                 $projectAlias: "panel",
                 $serviceName: "base",
+                $appDirName: '%kernel.project_dir%',
+                $appEnv: '%env(APP_ENV)%',
+                $appDebug: '%env(APP_DEBUG)%',
                 $ijsonHost: null,
             }
 

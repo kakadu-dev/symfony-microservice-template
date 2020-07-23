@@ -34,9 +34,9 @@ class MicroserviceHelper
      */
     public function init(ConsoleLogger $logger)
     {
-        Microservice::create("{$this->project->projectAlias}:{$this->project->serviceName}", [
-            'ijson' => $this->project->ijsonHost,
-            'env'   => $this->project->appEnv,
+        Microservice::create("{$this->project->getProjectAlias()}:{$this->project->getServiceName()}", [
+            'ijson' => $this->project->getIjsonHost(),
+            'env'   => $this->project->getAppEnv(),
         ], $logger);;
     }
 }

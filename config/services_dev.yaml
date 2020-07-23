@@ -1,4 +1,2 @@
 services:
-    _defaults:
-        autowire: true
-        autoconfigure: true
+    _defaults: { autowire: true, autoconfigure: true }

@@ -11,41 +11,56 @@ class Project
     /**
      * @var string
      */
-    public string $appEnv;
+    private string $appEnv;
 
     /**
      * @var bool
      */
-    public bool $appDebug;
+    private bool $appDebug;
 
     /**
      * @var string
      */
-    public string $projectAlias;
+    private string $projectAlias;
 
     /**
      * @var string
      */
-    public string $serviceName;
+    private string $serviceName;
 
     /**
      * @var string|null
      */
-    public ?string $ijsonHost;
+    private ?string $ijsonHost;
+
+    /**
+     * @var string
+     */
+    private string $appDirName;
 
     /**
      * Project constructor.
      *
      * @param string    $projectAlias
      * @param string    $serviceName
+     * @param string    $appDirName
+     * @param string    $appEnv
+     * @param string    $appDebug
      * @param bool|null $ijsonHost
      */
-    public function __construct(string $projectAlias, string $serviceName, ?bool $ijsonHost = null)
-    {
-        $this->appEnv       = $_SERVER['APP_ENV'];
-        $this->appDebug     = (bool) $_SERVER['APP_DEBUG'];
+    public function __construct(
+        string $projectAlias,
+        string $serviceName,
+        string $appDirName,
+        string $appEnv = 'dev',
+        string $appDebug = '1',
+        ?bool $ijsonHost = null
+    ) {
+        $this->appEnv       = $appEnv;
+        $this->appDebug     = (bool) $appDebug;
         $this->projectAlias = $projectAlias;
         $this->serviceName  = $serviceName;
+        $this->appDirName   = $appDirName;
         $this->ijsonHost    = $ijsonHost;
     }
 
@@ -63,5 +78,37 @@ class Project
     public function getAppDebug(): bool
     {
         return $this->appDebug;
+    }
+
+    /**
+     * @return string
+     */
+    public function getProjectAlias(): string
+    {
+        return $this->projectAlias;
+    }
+
+    /**
+     * @return string
+     */
+    public function getServiceName(): string
+    {
+        return $this->serviceName;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getIjsonHost(): ?string
+    {
+        return $this->ijsonHost;
+    }
+
+    /**
+     * @return string
+     */
+    public function getAppDirName(): string
+    {
+        return $this->appDirName;
     }
 }
