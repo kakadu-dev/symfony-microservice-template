@@ -29,11 +29,12 @@ services:
     App\Helpers\Project:
         arguments:
             {
-                $projectAlias: "panel",
-                $serviceName: "base",
+                $projectAlias: 'panel',
+                $serviceName: 'base',
                 $appDirName: '%kernel.project_dir%',
                 $appEnv: '%env(APP_ENV)%',
                 $appDebug: '%env(APP_DEBUG)%',
+                $panelAlias: '%env(PANEL_ALIAS)%',
                 $ijsonHost: null,
             }
 

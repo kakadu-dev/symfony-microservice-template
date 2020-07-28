@@ -2,10 +2,12 @@
 
 namespace App\Commands;
 
-use App\Helpers\{MicroserviceHelper, Project};
+use App\Helpers\{Methods\PanelMethod, MicroserviceHelper, Project};
 use Exception;
+use Kakadu\Microservices\exceptions\MicroserviceException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Yaml\Yaml;
@@ -18,15 +20,6 @@ class Configure extends Command
 {
     private const ENV_DEV  = 'dev';
     private const ENV_PROD = 'prod';
-
-    private const DEFAULT_CONFIG = [
-        'services' => [
-            '_defaults' => [
-                'autowire'      => true,
-                'autoconfigure' => true,
-            ],
-        ],
-    ];
 
     /**
      * @var MicroserviceHelper
@@ -47,7 +40,7 @@ class Configure extends Command
     public function __construct(MicroserviceHelper $microservice, Project $project)
     {
         $this->microservice = $microservice;
-        $this->project      = $project;
+        $this->project      = Project::setInstance($project);
 
         parent::__construct();
     }
@@ -74,6 +67,7 @@ class Configure extends Command
         $helper = $this->getHelper('question');
 
         $output->writeln([
+            '',
             'Which environment do you want the application to be initialized in?',
             '',
             '   [0] Development',
@@ -87,11 +81,11 @@ class Configure extends Command
         switch ($answerAppEnv) {
             case '0':
                 $this->putEnv(self::ENV_DEV);
-                $output->writeln(['', 'Environments were set for Development project.']);
+                $output->writeln(['', 'Environments were set for Development project.', '']);
             break;
             case '1':
                 $this->putEnv(self::ENV_PROD);
-                $output->writeln(['', 'Environments were set for Production project.']);
+                $output->writeln(['', 'Environments were set for Production project.', '']);
             break;
             case 'q':
                 $output->writeln('Bye!');
@@ -103,12 +97,91 @@ class Configure extends Command
                 return Command::FAILURE;
         }
 
-        // TODO get data from microservice
+        $this->microservice->init(new ConsoleLogger($output));
 
-        $this->putConfig([]);
+        $this->putConfig($this->getProject());
 
         $output->writeln(['', 'Configuration project were installed successfully!']);
+
         return Command::SUCCESS;
+    }
+
+    /**
+     * @return mixed
+     * @throws MicroserviceException|Exception
+     */
+    public function getProject()
+    {
+        $projectAlias = $this->project->getProjectAlias();
+        $serviceName  = $this->project->getServiceName();
+
+        $result = PanelMethod::viewProject([
+            'alias' => $projectAlias,
+            'query' => [
+                'expands' => [
+                    [
+                        'name'  => 'MysqlCredentials',
+                        'where' => [
+                            'service' => [
+                                'or' => [$serviceName, '*'],
+                            ],
+                        ],
+                        'order' => ['-service'],
+                        'limit' => 1,
+                    ],
+                    [
+                        'name'     => 'RedisCredentials',
+                        'required' => false,
+                        'where'    => [
+                            'service' => [
+                                'or' => [$serviceName, '*'],
+                            ],
+                        ],
+                        'order'    => ['-service'],
+                        'limit'    => 1,
+                    ],
+                    [
+                        'name'     => 'MailCredentials',
+                        'required' => false,
+                        'where'    => [
+                            'service' => [
+                                'or' => [$serviceName, '*'],
+                            ],
+                        ],
+                        'order'    => ['-service'],
+                        'limit'    => 1,
+                    ],
+                    [
+                        'name'     => 'AwsCredentials',
+                        'required' => false,
+                        'where'    => [
+                            'service' => [
+                                'or' => [$serviceName, '*'],
+                            ],
+                        ],
+                        'order'    => ['-service'],
+                        'limit'    => 1,
+                    ],
+                    [
+                        'name'     => 'ServiceConfig',
+                        'required' => false,
+                        'where'    => [
+                            'service' => $serviceName,
+                        ],
+                    ],
+                    [
+                        'name'     => 'FirebaseConfig',
+                        'required' => false,
+                    ],
+                ],
+            ],
+        ]);
+
+        if (!$result || empty($result->getResult()['model'] ?? null)) {
+            throw new Exception("Project '$projectAlias' not found.");
+        }
+
+        return $result->getResult()['model'];
     }
 
     /**
@@ -126,6 +199,8 @@ class Configure extends Command
             . "APP_DEBUG={$appDebug}"
             . "\n"
             . "APP_SECRET={$appSecret}"
+            . "\n"
+            . "PANEL_ALIAS=panel"
         );
     }
 
@@ -148,12 +223,52 @@ class Configure extends Command
             $this->makeFile();
         }
 
-        // TODO merge data from microservice
-
-//        $result = Yaml::dump(array_merge($data, self::DEFAULT_CONFIG), 2, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
-        $result = Yaml::dump(self::DEFAULT_CONFIG, 2, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+        $result = Yaml::dump($this->getConfig($data),2,4,Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
 
         file_put_contents($this->getPathConfig(), $result);
+    }
+
+    /**
+     * @param array $data
+     *
+     * @return array
+     */
+    public function getConfig(array $data): array
+    {
+        return array_merge(
+            [
+                'parameters' => $this->getParamsConfigure($data),
+            ],
+            [
+                'services' => [
+                    '_defaults' => [
+                        'autowire'      => true,
+                        'autoconfigure' => true,
+                    ],
+//                    $this->getServiceConfigure($data),
+                ],
+            ],
+        );
+    }
+
+    /**
+     * @param array $data
+     *
+     * @return array
+     */
+    public function getParamsConfigure(array $data): array
+    {
+        return [];
+    }
+
+    /**
+     * @param array $data
+     *
+     * @return array
+     */
+    public function getServiceConfigure(array $data): array
+    {
+        return [];
     }
 
     /**

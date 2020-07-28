@@ -39,6 +39,16 @@ class Project
     private string $appDirName;
 
     /**
+     * @var string
+     */
+    private string $panelAlias;
+
+    /**
+     * @var Project|null
+     */
+    private static ?Project $instance = null;
+
+    /**
      * Project constructor.
      *
      * @param string    $projectAlias
@@ -46,6 +56,7 @@ class Project
      * @param string    $appDirName
      * @param string    $appEnv
      * @param string    $appDebug
+     * @param string    $panelAlias
      * @param bool|null $ijsonHost
      */
     public function __construct(
@@ -54,13 +65,15 @@ class Project
         string $appDirName,
         string $appEnv = 'dev',
         string $appDebug = '1',
-        ?bool $ijsonHost = null
+        string $panelAlias = 'panel',
+        bool $ijsonHost = null
     ) {
         $this->appEnv       = $appEnv;
         $this->appDebug     = (bool) $appDebug;
         $this->projectAlias = $projectAlias;
         $this->serviceName  = $serviceName;
         $this->appDirName   = $appDirName;
+        $this->panelAlias   = $panelAlias;
         $this->ijsonHost    = $ijsonHost;
     }
 
@@ -110,5 +123,35 @@ class Project
     public function getAppDirName(): string
     {
         return $this->appDirName;
+    }
+
+    /**
+     * @param Project|null $project
+     *
+     * @return Project
+     */
+    public static function setInstance(Project $project): Project
+    {
+        if (self::$instance === null) {
+            self::$instance = $project;
+        }
+
+        return self::$instance;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPanelAlias(): string
+    {
+        return $this->panelAlias;
+    }
+
+    /**
+     * @return Project|null
+     */
+    public static function getInstance(): ?Project
+    {
+        return self::$instance;
     }
 }

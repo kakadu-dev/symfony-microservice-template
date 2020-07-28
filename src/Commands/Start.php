@@ -37,7 +37,9 @@ class Start extends Command
     public function __construct(MicroserviceHelper $microservice, Project $project)
     {
         $this->microservice = $microservice;
-        $this->project      = $project;
+        $this->project      = Project::setInstance($project);
+
+        $project->getProjectAlias();
 
         parent::__construct();
     }
