@@ -1,13 +1,13 @@
 <?php
 
-namespace App\modules\rpc\event;
+namespace App\Events;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\ViewEvent;
 
 /**
  * Class View
- * @package App\modules\rpc\EventListener
+ * @package App\Event
  */
 class View
 {

@@ -1,5 +1,4 @@
 demo:
-  resource: '../src/modules/rpc/routes/'
-  type: directory
-  prefix: rpc
+  resource: routes/demo.yaml
+  prefix: /demo
 

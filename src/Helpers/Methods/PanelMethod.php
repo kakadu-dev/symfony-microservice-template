@@ -7,6 +7,10 @@ use Kakadu\Microservices\exceptions\MicroserviceException;
 use Kakadu\Microservices\Microservice;
 use Kakadu\Microservices\MjResponse;
 
+/**
+ * Class PanelMethod
+ * @package App\Helpers\Methods
+ */
 class PanelMethod extends AbstractMethod
 {
     const PROJECTS_VIEW = 'projects.view';

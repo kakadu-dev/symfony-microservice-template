@@ -4,7 +4,7 @@ Content-Type: application/json
 
 {
     "id": 1,
-    "method": "rpc.demo.hello",
+    "method": "demo.hello",
     "params": {
         "test": 1
     }

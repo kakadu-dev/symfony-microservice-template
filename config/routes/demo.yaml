@@ -1,0 +1,4 @@
+demo_hello:
+  path:       /hello
+  controller: App\Controller\DemoController::hello
+

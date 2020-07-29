@@ -2,6 +2,8 @@
 
 namespace App\Helpers;
 
+use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
+
 /**
  * Class Project
  * @package App\Helpers
@@ -51,30 +53,24 @@ class Project
     /**
      * Project constructor.
      *
-     * @param string    $projectAlias
-     * @param string    $serviceName
-     * @param string    $appDirName
-     * @param string    $appEnv
-     * @param string    $appDebug
-     * @param string    $panelAlias
-     * @param bool|null $ijsonHost
+     * @param ContainerBagInterface $bag
+     * @param ENV                   $env
      */
-    public function __construct(
-        string $projectAlias,
-        string $serviceName,
-        string $appDirName,
-        string $appEnv = 'dev',
-        string $appDebug = '1',
-        string $panelAlias = 'panel',
-        bool $ijsonHost = null
-    ) {
-        $this->appEnv       = $appEnv;
-        $this->appDebug     = (bool) $appDebug;
-        $this->projectAlias = $projectAlias;
-        $this->serviceName  = $serviceName;
-        $this->appDirName   = $appDirName;
-        $this->panelAlias   = $panelAlias;
-        $this->ijsonHost    = $ijsonHost;
+    public function __construct(ContainerBagInterface $bag, ENV $env)
+    {
+        $this->appDirName   = $bag->get('kernel.project_dir');
+        $this->appDebug     = (bool) $env->get('APP_DEBUG', false);
+        $this->appEnv       = (string) $env->get('APP_ENV', 'dev');
+        $this->panelAlias   = (string) $env->get('PANEL_ALIAS', 'panel');
+        $this->projectAlias = $bag->has('microservice.project_alias')
+            ? $bag->get('microservice.project_alias')
+            : 'panel';
+        $this->serviceName  = $bag->has('microservice.service_name')
+            ? $bag->get('microservice.service_name')
+            : 'base';
+        $this->ijsonHost    = $bag->has('microservice.ijson_host')
+            ? $bag->get('microservice.ijson_host')
+            : null;
     }
 
     /**

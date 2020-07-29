@@ -1,13 +1,13 @@
 <?php
 
-namespace App\modules\rpc\controllers;
+namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Class DemoController
- * @package App\modules\rpc\controllers
+ * @package App\Controller
  */
 class DemoController extends AbstractController
 {

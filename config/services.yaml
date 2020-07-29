@@ -4,6 +4,9 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
 parameters:
+    microservice.project_alias: 'panel'
+    microservice.service_name: 'base'
+    microservice.ijson_host: null
 
 services:
     # default configuration for services in *this* file
@@ -26,26 +29,6 @@ services:
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
 
-    App\Helpers\Project:
-        arguments:
-            {
-                $projectAlias: 'panel',
-                $serviceName: 'base',
-                $appDirName: '%kernel.project_dir%',
-                $appEnv: '%env(APP_ENV)%',
-                $appDebug: '%env(APP_DEBUG)%',
-                $panelAlias: '%env(PANEL_ALIAS)%',
-                $ijsonHost: null,
-            }
-
-    App\modules\rpc\event\Request:
-        tags:
-            - { name: kernel.event_listener, event: kernel.request}
-
-    App\modules\rpc\event\Controller:
-        tags:
-            - { name: kernel.event_listener, event: kernel.controller}
-
-    App\modules\rpc\event\View:
+    App\Events\View:
         tags:
             - { name: kernel.event_listener, event: kernel.view}

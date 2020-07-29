@@ -2,7 +2,7 @@
 
 namespace App\Commands;
 
-use App\Helpers\{Methods\PanelMethod, MicroserviceHelper, Project};
+use App\Helpers\{ENV, Methods\PanelMethod, MicroserviceHelper, Project};
 use Exception;
 use Kakadu\Microservices\exceptions\MicroserviceException;
 use Symfony\Component\Console\Command\Command;
@@ -10,6 +10,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
+use Symfony\Component\PropertyAccess\{PropertyAccess, PropertyAccessor};
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -32,15 +33,28 @@ class Configure extends Command
     public Project $project;
 
     /**
+     * @var PropertyAccessor
+     */
+    public PropertyAccessor $propertyAccessor;
+
+    /**
+     * @var ENV
+     */
+    public ENV $env;
+
+    /**
      * Configure constructor.
      *
      * @param MicroserviceHelper $microservice
      * @param Project            $project
+     * @param ENV                $env
      */
-    public function __construct(MicroserviceHelper $microservice, Project $project)
+    public function __construct(MicroserviceHelper $microservice, Project $project, ENV $env)
     {
-        $this->microservice = $microservice;
-        $this->project      = Project::setInstance($project);
+        $this->microservice     = $microservice;
+        $this->project          = Project::setInstance($project);
+        $this->propertyAccessor = PropertyAccess::createPropertyAccessor();
+        $this->env              = $env;
 
         parent::__construct();
     }
@@ -80,11 +94,11 @@ class Configure extends Command
 
         switch ($answerAppEnv) {
             case '0':
-                $this->putEnv(self::ENV_DEV);
+                $this->putDefaultEnv(self::ENV_DEV);
                 $output->writeln(['', 'Environments were set for Development project.', '']);
             break;
             case '1':
-                $this->putEnv(self::ENV_PROD);
+                $this->putDefaultEnv(self::ENV_PROD);
                 $output->writeln(['', 'Environments were set for Production project.', '']);
             break;
             case 'q':
@@ -187,31 +201,12 @@ class Configure extends Command
     /**
      * @param string $appEnv
      */
-    public function putEnv(string $appEnv): void
+    public function putDefaultEnv(string $appEnv): void
     {
-        $appDebug  = (string) $appEnv === self::ENV_DEV ? 1 : 0;
-        $appSecret = md5(time());
-
-        file_put_contents(
-            $this->getPathEnv(),
-            "APP_ENV={$appEnv}"
-            . "\n"
-            . "APP_DEBUG={$appDebug}"
-            . "\n"
-            . "APP_SECRET={$appSecret}"
-            . "\n"
-            . "PANEL_ALIAS=panel"
-        );
-    }
-
-    /**
-     * @return string
-     */
-    public function getPathEnv(): string
-    {
-        return $this->project->getAppDirName()
-            . DIRECTORY_SEPARATOR
-            . '.env';
+        $this->env->put('APP_ENV', $appEnv);
+        $this->env->put('APP_DEBUG', ((string) $appEnv === self::ENV_DEV ? 1 : 0));
+        $this->env->put('APP_SECRET', md5(time()));
+        $this->env->put('PANEL_ALIAS', 'panel');
     }
 
     /**
@@ -223,7 +218,15 @@ class Configure extends Command
             $this->makeFile();
         }
 
-        $result = Yaml::dump($this->getConfig($data),2,4,Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+        $result = Yaml::dump(
+            array_merge(
+                $this->getParamsConfigure($data),
+                $this->getServiceConfigure($data)
+            ),
+            2,
+            4,
+            Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK
+        );
 
         file_put_contents($this->getPathConfig(), $result);
     }
@@ -233,32 +236,17 @@ class Configure extends Command
      *
      * @return array
      */
-    public function getConfig(array $data): array
-    {
-        return array_merge(
-            [
-                'parameters' => $this->getParamsConfigure($data),
-            ],
-            [
-                'services' => [
-                    '_defaults' => [
-                        'autowire'      => true,
-                        'autoconfigure' => true,
-                    ],
-//                    $this->getServiceConfigure($data),
-                ],
-            ],
-        );
-    }
-
-    /**
-     * @param array $data
-     *
-     * @return array
-     */
     public function getParamsConfigure(array $data): array
     {
-        return [];
+        $params = [];
+
+        $params['microservice.project_alias'] = $data['alias'] ?? 'default';
+
+        // TODO put params config which you want
+
+        return [
+            'parameters' => $params,
+        ];
     }
 
     /**
@@ -268,13 +256,68 @@ class Configure extends Command
      */
     public function getServiceConfigure(array $data): array
     {
-        return [];
+        $services = [
+            '_defaults' => [
+                'autowire'      => true,
+                'autoconfigure' => true,
+            ],
+        ];
+
+        if ($mysql = $this->getRemoteConfig($data, '[MysqlCredentials][0]', '[projectId]')) {
+            $this->env->put(
+                'DATABASE_URL',
+                'mysql://'
+                . $mysql['user']
+                . ':'
+                . ($mysql['password'] ? : null)
+                . '@'
+                . $mysql['host']
+                . ':'
+                . $mysql['port']
+                . '/'
+                . ($mysql['database'] ?? $this->project->getServiceName())
+                . '?'
+                . 'serverVersion=5.7'
+            );
+        }
+
+        // TODO put service config which you want
+
+        return [
+            'services' => $services,
+        ];
+    }
+
+    /**
+     * Get project remote config
+     *
+     * @param array  $project
+     * @param string $location   "test.location.in.array"
+     * @param string $checkField "field"
+     *
+     * @return array|null
+     */
+    private function getRemoteConfig(array $project, string $location, string $checkField): ?array
+    {
+        $config = $this->propertyAccessor->getValue($project, $location);
+
+        if (!$config) {
+            return null;
+        }
+
+        $checkValue = $this->propertyAccessor->getValue($project, $location . $checkField);
+
+        if (!$checkValue) {
+            return null;
+        }
+
+        return $config;
     }
 
     /**
      * @return string
      */
-    public function getPathConfig(): string
+    private function getPathConfig(): string
     {
         return $this->project->getAppDirName()
             . DIRECTORY_SEPARATOR
@@ -286,7 +329,7 @@ class Configure extends Command
     /**
      * create configuration file
      */
-    public function makeFile(): void
+    private function makeFile(): void
     {
         @mkdir(dirname($this->getPathConfig()), 0777, true);
     }
