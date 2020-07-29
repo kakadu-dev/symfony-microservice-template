@@ -23,4 +23,6 @@ ENVIRONMENT:
         docker-compose run ijson
       ```
     - `composer install`
-    - Start server `symfony console microservice:start`
+    - Create config `./bin/console microservice:configure`
+    - Start server `./bin/console microservice:start`
+    - See `scratches` folder for make requests
