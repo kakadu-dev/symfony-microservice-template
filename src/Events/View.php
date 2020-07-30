@@ -2,7 +2,7 @@
 
 namespace App\Events;
 
-use Symfony\Component\HttpFoundation\JsonResponse;
+use App\Components\MicroserviceResponse;
 use Symfony\Component\HttpKernel\Event\ViewEvent;
 
 /**
@@ -20,7 +20,7 @@ class View
     {
         $value = $event->getControllerResult();
 
-        $response = new JsonResponse($value);
+        $response = new MicroserviceResponse($value);
 
         $event->setResponse($response);
     }
