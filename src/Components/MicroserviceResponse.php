@@ -5,6 +5,12 @@ namespace App\Components;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 
+/**
+ * By this response we'll be able to sent array without format to Json
+ *
+ * Class MicroserviceResponse
+ * @package App\Components
+ */
 class MicroserviceResponse extends Response
 {
     /**
