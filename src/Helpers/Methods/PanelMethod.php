@@ -43,14 +43,4 @@ class PanelMethod extends AbstractMethod
                 ]
             );
     }
-
-    /**
-     * Get panel alias
-     *
-     * @return string
-     */
-    protected static function getProjectAlias(): string
-    {
-        return Project::getInstance()->getPanelAlias();
-    }
 }

@@ -2,15 +2,28 @@
 
 namespace App\Commands;
 
-use App\Helpers\{ENV, Methods\PanelMethod, MicroserviceHelper, Project};
+use App\Helpers\Authorization\Rules;
+use App\Helpers\Methods\{
+    AuthorizationMethod,
+    PanelMethod
+};
+use App\Helpers\{
+    ENV,
+    MicroserviceHelper,
+    Project
+};
 use Exception;
 use Kakadu\Microservices\exceptions\MicroserviceException;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
-use Symfony\Component\PropertyAccess\{PropertyAccess, PropertyAccessor};
+use Symfony\Component\PropertyAccess\{
+    PropertyAccess,
+    PropertyAccessor
+};
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -65,6 +78,7 @@ class Configure extends Command
     protected function configure()
     {
         $this
+            ->addArgument('manual', InputArgument::OPTIONAL, 'manual installation. Default: false')
             ->setName('microservice:configure')
             ->setDescription('Configure project');
     }
@@ -78,42 +92,61 @@ class Configure extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $helper = $this->getHelper('question');
+        if ($input->getArgument('manual') === 'manual') {
+            $helper = $this->getHelper('question');
 
-        $output->writeln([
-            '',
-            'Which environment do you want the application to be initialized in?',
-            '',
-            '   [0] Development',
-            '   [1] Production',
-            '',
-        ]);
+            $output->writeln([
+                '',
+                'Which environment do you want the application to be initialized in?',
+                '',
+                '   [0] Development',
+                '   [1] Production',
+                '',
+            ]);
 
-        $questionAppEnv = new Question('Your choice [0-1, or "q" to quit]: ', 'dev');
-        $answerAppEnv   = $helper->ask($input, $output, $questionAppEnv);
+            $questionAppEnv = new Question('Your choice [0-1, or "q" to quit]: ', 'dev');
+            $answerAppEnv   = $helper->ask($input, $output, $questionAppEnv);
 
-        switch ($answerAppEnv) {
-            case '0':
+            switch ($answerAppEnv) {
+                case '0':
+                    $this->putDefaultEnv(self::ENV_DEV);
+                    $output->writeln(['', 'Environments were set for Development project.', '']);
+                break;
+                case '1':
+                    $this->putDefaultEnv(self::ENV_PROD);
+                    $output->writeln(['', 'Environments were set for Production project.', '']);
+                break;
+                case 'q':
+                    $output->writeln('Bye!');
+
+                    return Command::SUCCESS;
+                default:
+                    $output->writeln('Something went wrong!');
+
+                    return Command::FAILURE;
+            }
+        } else {
+            $env = $_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'];
+            if ($env === self::ENV_DEV) {
                 $this->putDefaultEnv(self::ENV_DEV);
-                $output->writeln(['', 'Environments were set for Development project.', '']);
-            break;
-            case '1':
+            }
+            if ($env === self::ENV_PROD) {
                 $this->putDefaultEnv(self::ENV_PROD);
-                $output->writeln(['', 'Environments were set for Production project.', '']);
-            break;
-            case 'q':
-                $output->writeln('Bye!');
-
-                return Command::SUCCESS;
-            default:
-                $output->writeln('Something went wrong!');
-
-                return Command::FAILURE;
+            }
         }
 
         $this->microservice->init(new ConsoleLogger($output));
 
-        $this->putConfig($this->getProject());
+        $config = [];
+        if (!$this->project->isDisabledControlPanel()) {
+            $config = $this->getConfig();
+        }
+
+        $this->putConfig($config);
+
+        if (!$this->project->isDisabledAuthorization()) {
+            $this->importAuthorizationRules();
+        }
 
         $output->writeln(['', 'Configuration project were installed successfully!']);
 
@@ -124,7 +157,7 @@ class Configure extends Command
      * @return mixed
      * @throws MicroserviceException|Exception
      */
-    public function getProject()
+    public function getConfig()
     {
         $projectAlias = $this->project->getProjectAlias();
         $serviceName  = $this->project->getServiceName();
@@ -205,8 +238,6 @@ class Configure extends Command
     {
         $this->env->put('APP_ENV', $appEnv);
         $this->env->put('APP_DEBUG', ((string) $appEnv === self::ENV_DEV ? 1 : 0));
-        $this->env->put('APP_SECRET', md5(time()));
-        $this->env->put('PANEL_ALIAS', 'panel');
     }
 
     /**
@@ -214,10 +245,6 @@ class Configure extends Command
      */
     public function putConfig(array $data = []): void
     {
-        if (!file_exists($this->getPathConfig())) {
-            $this->makeFile();
-        }
-
         $result = Yaml::dump(
             array_merge(
                 $this->getParamsConfigure($data),
@@ -235,14 +262,14 @@ class Configure extends Command
      * @param array $data
      *
      * @return array
+     * @example $params['microservice.project_alias'] = $data['alias'] ?? 'panel';
+     *
      */
     public function getParamsConfigure(array $data): array
     {
         $params = [];
 
-        $params['microservice.project_alias'] = $data['alias'] ?? 'default';
-
-        // TODO put params config which you want
+        // put other service config
 
         return [
             'parameters' => $params,
@@ -266,22 +293,16 @@ class Configure extends Command
         if ($mysql = $this->getRemoteConfig($data, '[MysqlCredentials][0]', '[projectId]')) {
             $this->env->put(
                 'DATABASE_URL',
-                'mysql://'
-                . $mysql['user']
-                . ':'
-                . ($mysql['password'] ? : null)
-                . '@'
-                . $mysql['host']
-                . ':'
-                . $mysql['port']
-                . '/'
-                . ($mysql['database'] ?? $this->project->getServiceName())
-                . '?'
-                . 'serverVersion=5.7'
+                'mysql://' . $mysql['user']
+                . ':' . $mysql['password']
+                . '@' . $mysql['host']
+                . ':' . $mysql['port']
+                . '/' . $mysql['database']
+                . '?serverVersion=5.7'
             );
         }
 
-        // TODO put service config which you want
+        // put other service config
 
         return [
             'services' => $services,
@@ -327,10 +348,17 @@ class Configure extends Command
     }
 
     /**
-     * create configuration file
+     * Import authorization rules
+     *
+     * @return void
+     * @throws MicroserviceException
      */
-    private function makeFile(): void
+    private function importAuthorizationRules(): void
     {
-        @mkdir(dirname($this->getPathConfig()), 0777, true);
+        AuthorizationMethod::importRules(
+            $this->project->getServiceName(),
+            Rules::VERSION,
+            Rules::rules()
+        );
     }
 }

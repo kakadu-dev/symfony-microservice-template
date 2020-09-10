@@ -1,6 +1,10 @@
 # see https://symfony.com/doc/current/reference/configuration/framework.html
 framework:
     secret: '%env(APP_SECRET)%'
+    validation:
+        mapping:
+            paths:
+                - "%kernel.project_dir%/config/validation/"
     #csrf_protection: true
     #http_method_override: true
 

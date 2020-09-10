@@ -2,6 +2,7 @@
 
 namespace App\Commands;
 
+use App\Components\MicroserviceRequest;
 use App\Helpers\{MicroserviceHelper, Project};
 use App\Kernel;
 use Exception;
@@ -10,7 +11,6 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Class Start
@@ -69,7 +69,7 @@ class Start extends Command
             $route = str_replace('.', '/', $method);
 
             $kernel  = new Kernel($this->project->getAppEnv(), $this->project->getAppDebug());
-            $request = Request::create($route, 'POST', $params);
+            $request = MicroserviceRequest::create($route, 'POST', $params);
 
             return $kernel->handle($request)->getContent();
         });

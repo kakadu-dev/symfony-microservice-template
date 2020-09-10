@@ -1,4 +1,0 @@
-parameters:
-    microservice.project_alias: panel
-services:
-    _defaults: { autowire: true, autoconfigure: true }

@@ -41,9 +41,14 @@ class Project
     private string $appDirName;
 
     /**
-     * @var string
+     * @var bool
      */
-    private string $panelAlias;
+    private bool $isDisabledControlPanel;
+
+    /**
+     * @var bool
+     */
+    private bool $isDisabledAuthorization;
 
     /**
      * @var Project|null
@@ -59,18 +64,13 @@ class Project
     public function __construct(ContainerBagInterface $bag, ENV $env)
     {
         $this->appDirName   = $bag->get('kernel.project_dir');
+        $this->serviceName  = $bag->get('microservice.service_name');
         $this->appDebug     = (bool) $env->get('APP_DEBUG', false);
         $this->appEnv       = (string) $env->get('APP_ENV', 'dev');
-        $this->panelAlias   = (string) $env->get('PANEL_ALIAS', 'panel');
-        $this->projectAlias = $bag->has('microservice.project_alias')
-            ? $bag->get('microservice.project_alias')
-            : 'panel';
-        $this->serviceName  = $bag->has('microservice.service_name')
-            ? $bag->get('microservice.service_name')
-            : 'base';
-        $this->ijsonHost    = $bag->has('microservice.ijson_host')
-            ? $bag->get('microservice.ijson_host')
-            : null;
+        $this->projectAlias = (string) $env->get('PROJECT_ALIAS', 'panel');
+        $this->ijsonHost    = $env->get('IJSON_HOST', null);
+        $this->isDisabledControlPanel = $env->get('CONTROL_PANEL_DISABLE', 'no') === 'yes';
+        $this->isDisabledAuthorization = $env->get('AUTHORIZATION_DISABLE', 'yes') === 'yes';
     }
 
     /**
@@ -122,6 +122,22 @@ class Project
     }
 
     /**
+     * @return bool
+     */
+    public function isDisabledControlPanel(): bool
+    {
+        return $this->isDisabledControlPanel;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isDisabledAuthorization(): bool
+    {
+        return $this->isDisabledAuthorization;
+    }
+
+    /**
      * @param Project|null $project
      *
      * @return Project
@@ -133,14 +149,6 @@ class Project
         }
 
         return self::$instance;
-    }
-
-    /**
-     * @return string
-     */
-    public function getPanelAlias(): string
-    {
-        return $this->panelAlias;
     }
 
     /**

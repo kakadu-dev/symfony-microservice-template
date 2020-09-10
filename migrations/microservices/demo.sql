@@ -1,0 +1,3 @@
+-- change file name like your table name
+-- INSERT IGNORE INTO demo (id, alias, title, attribute)
+-- VALUES (1, 'text', 'text', 'text');

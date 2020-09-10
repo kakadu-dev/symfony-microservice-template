@@ -1,0 +1,28 @@
+#!/usr/bin/env php
+<?php
+
+$content = [
+    'APP_ENV=' . (getenv('APP_ENV') ? getenv('APP_ENV') : 'dev'),
+    'DATABASE_URL=' . getMysql(),
+    'PROJECT_ALIAS=' . (getenv('PROJECT_ALIAS') ? getenv('PROJECT_ALIAS') : 'panel'),
+    'APP_SECRET=' . md5(time()),
+    'CONTROL_PANEL_DISABLE=' . (getenv('CONTROL_PANEL_DISABLE') ? getenv('CONTROL_PANEL_DISABLE') : 'no'),
+    'AUTHORIZATION_DISABLE=' . (getenv('AUTHORIZATION_DISABLE') ? getenv('AUTHORIZATION_DISABLE') : 'yes'),
+];
+
+if ($ijson = (getenv('IJSON_HOST') ? getenv('IJSON_HOST') : null)) {
+    $content[] = 'IJSON_HOST=' . $ijson;
+}
+
+file_put_contents((__DIR__) . '/.env', implode("\n", $content));
+
+function getMysql()
+{
+    return 'mysql://'
+        . (getenv('MYSQL_USER') ? getenv('MYSQL_USER') : 'root')
+        . ':' . (getenv('MYSQL_PASSWORD') ? getenv('MYSQL_PASSWORD') : 'test_pass')
+        . '@' . (getenv('MYSQL_HOST') ? getenv('MYSQL_HOST') : 'localhost')
+        . ':' . (getenv('MYSQL_PORT') ? getenv('MYSQL_PORT') : '3311')
+        . '/' . (getenv('MYSQL_DATABASE') ? getenv('MYSQL_DATABASE') : 'sys')
+        . '?' . 'serverVersion=5.7';
+}

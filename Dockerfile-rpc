@@ -1,0 +1,47 @@
+FROM matthewpatell/universal-docker-server-php-fpm:4.0
+
+# Utils
+RUN apt-get update -y --fix-missing \
+    && apt-get install -y \
+            mc \
+            nano \
+            curl wget \
+    # Fix terminal
+    && echo "export TERM=xterm mc" >> ~/.bashrc
+
+ENV WEB_PATH=/var/www
+
+RUN mkdir -p $WEB_PATH
+
+WORKDIR $WEB_PATH
+
+# Copy app
+COPY ./bin $WEB_PATH/bin
+COPY ./config $WEB_PATH/config
+COPY ./migrations $WEB_PATH/migrations
+COPY ./public $WEB_PATH/public
+COPY ./src $WEB_PATH/src
+COPY ./translations $WEB_PATH/translations
+COPY ./var $WEB_PATH/var
+COPY ./vendor $WEB_PATH/vendor
+COPY ./init_env $WEB_PATH/init_env
+COPY ./symfony.lock $WEB_PATH/symfony.lock
+COPY ./composer.json $WEB_PATH/composer.json
+
+# Copy php files
+COPY ./vendor/matthew-p/docker-server/docker/php/php.ini /etc/php/7.4/cli/php.ini
+COPY ./vendor/matthew-p/docker-server/docker/php/php.ini /etc/php/7.4/fpm/php.ini
+COPY ./vendor/matthew-p/docker-server/docker/php/php-fpm.conf /etc/php/7.4/fpm/php-fpm.conf
+COPY ./vendor/matthew-p/docker-server/docker/php/pool.d /etc/php/7.4/fpm/pool.d
+COPY ./vendor/matthew-p/docker-server/docker/php/mods-available/xdebug.ini /etc/php/7.4/mods-available/xdebug.ini
+
+# Create log dirs & cleanup
+RUN rm -rf $WEB_PATH/vendor/matthew-p/docker-server \
+    && mkdir -p /var/log/php7.4-fpm
+
+# PASS IJSON_HOST, PROJECT_ALIAS, APP_ENV (dev,prod)
+CMD php init_env \
+    && php bin/console microservice:configure \
+    && php bin/console doctrine:migrations:migrate --no-interaction \
+    && php bin/console microservice:seed \
+    && php bin/console microservice:start

@@ -1,0 +1,12 @@
+{
+    "name": "Template microservice",
+    "version": "1.0.0",
+    "description": "Template service documentation for the RPC v2.0 api access provided at KakaduBase",
+    "title": "Template microservice RPC v2.0",
+    "url": "template.",
+    "template": {
+        "withCompare": true,
+        "withGenerator": true,
+        "aloneDisplay": false
+    }
+}

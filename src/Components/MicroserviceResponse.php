@@ -48,6 +48,26 @@ class MicroserviceResponse extends Response
      */
     public function getContent()
     {
+        if (!is_string($this->content)) {
+            return $this->content;
+        }
+
+        if ($this->isJson($this->content)) {
+            return json_decode($this->content);
+        }
+
         return $this->content;
+    }
+
+    /**
+     * @param string $string
+     *
+     * @return bool
+     */
+    private function isJson(string $string): bool
+    {
+        json_decode($string);
+
+        return (json_last_error() === JSON_ERROR_NONE);
     }
 }

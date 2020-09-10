@@ -1,0 +1,14 @@
+# example
+#App\Entity\Demo:
+#  properties:
+#    alias:
+#      - Choice: { callback: [App\DBAL\Country\CountryCodeType, getKeys] }
+#    title:
+#      - NotBlank: { allowNull: true }
+#      - Length:
+#          max: 255
+#    isEnable:
+#      - Choice:
+#          choices: [1, 0]
+#    attribute:
+#      - Type: { type: array}
